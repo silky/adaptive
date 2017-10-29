@@ -510,6 +510,8 @@ class Learner2D(BaseLearner):
     bounds : list of 2-tuples
         A list ``[(a1, b1), (a2, b2)]`` containing bounds,
         one per dimension.
+    min_resolution : int, default: 2
+        Minimum linear resolution. If provided, must be greater than 2.
 
     Attributes
     ----------
@@ -540,7 +542,7 @@ class Learner2D(BaseLearner):
     it, your function needs to be slow enough to compute.
     """
 
-    def __init__(self, function, bounds):
+    def __init__(self, function, bounds, min_resolution=2):
         self.ndim = len(bounds)
         if self.ndim != 2:
             raise ValueError("Only 2-D sampling supported.")
@@ -549,6 +551,13 @@ class Learner2D(BaseLearner):
         self._values = np.zeros([100], dtype=float)
         self._stack = []
         self._interp = {}
+        self.min_resolution = min_resolution
+        if self.min_resolution < 2:
+            raise ValueError('`min_resolution` must be greater than 2.')
+        extended_bounds = [
+            np.linspace(bounds[0][0], bounds[0][1], min_resolution),
+            np.linspace(bounds[1][0], bounds[1][1], min_resolution)]
+
 
         xy_mean = np.mean(self.bounds, axis=1)
         xy_scale = np.ptp(self.bounds, axis=1)
@@ -565,10 +574,12 @@ class Learner2D(BaseLearner):
         # Keeps track till which index _points and _values are filled
         self.n = 0
 
-        self._bounds_points = list(itertools.product(*bounds))
+        self._initial_grid = list(itertools.product(*extended_bounds))
+        self._min_points = len(self._initial_grid)
+
 
         # Add the loss improvement to the bounds in the stack
-        self._stack = [(*p, np.inf) for p in self._bounds_points]
+        self._stack = [(*p, np.inf) for p in self._initial_grid]
 
         self.function = function
 
@@ -606,7 +617,7 @@ class Learner2D(BaseLearner):
         if self._interp:
             n_interp = list(self._interp.values())
             bounds_are_done = not any(p in self._interp
-                                      for p in self._bounds_points)
+                                      for p in self._initial_grid)
             if bounds_are_done:
                 values[n_interp] = self.ip()(points[n_interp])
             else:
@@ -737,8 +748,8 @@ class Learner2D(BaseLearner):
     def loss(self, real=True):
         n = self.n_real if real else self.n
         bounds_are_not_done = any(p in self._interp
-                                  for p in self._bounds_points)
-        if n <= 4 or bounds_are_not_done:
+                                  for p in self._initial_grid)
+        if n <= self._min_points or bounds_are_not_done:
             return np.inf
         ip = self.ip() if real else self.ip_combined()
         losses = _losses_per_triangle(ip)
