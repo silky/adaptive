@@ -74,6 +74,9 @@ class AverageLearner(BaseLearner):
         return max(standard_error / self.atol,
                    standard_error / abs(self.mean) / self.rtol)
 
+    def done(self, real=True):
+        return self.loss(real) < 1
+
     def remove_unfinished(self):
         """Remove uncomputed data from the learner."""
         pass
