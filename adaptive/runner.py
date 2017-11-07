@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import concurrent.futures as concurrent
+from collections import defaultdict
+import time
 
 import ipyparallel
 
@@ -39,7 +41,8 @@ class Runner:
     """
 
     def __init__(self, learner, executor=None, goal=None, *,
-                 log=False, ioloop=None, shutdown_executor=True):
+                 log=False, ioloop=None, shutdown_executor=True,
+                 timeit=False):
         self.ioloop = ioloop if ioloop else asyncio.get_event_loop()
         # if we instantiate our own executor, then we are also responsible
         # for calling 'shutdown'
@@ -47,6 +50,7 @@ class Runner:
         self.executor = ensure_async_executor(executor, self.ioloop)
         self.learner = learner
         self.log = [] if log else None
+        self.timeit = timeit
 
         if goal is None:
             def goal(_):
@@ -56,6 +60,19 @@ class Runner:
 
         coro = self._run()
         self.task = self.ioloop.create_task(coro)
+
+        self.add_point = self.learner.add_point
+        self.choose_points = self.learner.choose_points
+        self.function = self.learner.function
+
+        self.times = defaultdict(list)
+        if self.timeit:
+            self.add_point = self.time(self.add_point,
+                                       key='add_point')
+            self.choose_points = self.time(self.choose_points,
+                                           key='choose_points')
+            self.function = self.time(self.function,
+                                      key='function')
 
     def run_sync(self):
         return self.ioloop.run_until_complete(self.task)
@@ -76,9 +93,9 @@ class Runner:
                 if do_log:
                     self.log.append(('choose_points', len(done)))
 
-                points, _ = self.learner.choose_points(len(done))
+                points, _ = self.choose_points(len(done))
                 for x in points:
-                    xs[self.executor.submit(self.learner.function, x)] = x
+                    xs[self.executor.submit(self.function, x)] = x
 
                 # Collect and results and add them to the learner
                 futures = list(xs.keys())
@@ -90,7 +107,7 @@ class Runner:
                     y = await fut
                     if do_log:
                         self.log.append(('add_point', x, y))
-                    self.learner.add_point(x, y)
+                    self.add_point(x, y)
         finally:
             # remove points with 'None' values from the learner
             self.learner.remove_unfinished()
@@ -103,6 +120,14 @@ class Runner:
             if self.shutdown_executor:
                 self.executor.shutdown()
 
+    def time(self, method, key):
+        def timed(*args, **kwargs):
+            t_start = time.time()
+            result = method(*args, **kwargs)
+            t_end = time.time()
+            self.times[key].append(1000 * (t_end - t_start))
+            return result
+        return timed
 
 def replay_log(learner, log):
     """Apply a sequence of method calls to a learner.
