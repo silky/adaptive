@@ -1,9 +1,17 @@
 image: quantumtinkerer/research
 
+cache:
+  paths:
+    - .pip
+
+# Untill we put asv in the Dockerimage
+before_script:
+  - mkdir -p .pip
+  - pip install --cache-dir=.pip https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
+  - asv machine --config=benchmarks/asv.conf.json --yes
+
 stages:
   - test
-  - asv-setup
-  - benchmark
   - deploy
 
 test:
@@ -12,19 +20,10 @@ test:
      - py.test adaptive
   allow_failure: true
 
-setup asv:
-  stage: asv-setup
-  script:
-    - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
-    - asv machine --config=benchmarks/asv.conf.json --yes
-  artifacts:
-    untracked: true
-    expire_in: 2 hour
-
 benchmarks for master:
-  stage: benchmark
+  stage: test
   script:
-    - asv run --config=benchmarks/asv.conf.json --yes --skip-existing-commits ALL 
+    - asv run --config=benchmarks/asv.conf.json --skip-existing-commits ALL 
   artifacts:
     paths:
       - benchmarks/results
@@ -32,9 +31,10 @@ benchmarks for master:
     expire_in: 7d
 
 benchmarks not master:
-  stage: benchmark
+  stage: test
   script:
-    - asv run --config=benchmarks/asv.conf.json ${CI_COMMIT_REF_NAME}{u}..master
+    - git checkout ${CI_COMMIT_REF_NAME}
+    - asv run --config=benchmarks/asv.conf.json master..${CI_COMMIT_REF_NAME}
   except:
     - master
 
