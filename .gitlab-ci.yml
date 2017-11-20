@@ -15,9 +15,7 @@ benchmarks for master:
     - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
     - cd benchmarks
     - asv machine --yes
-    - asv run ALL
-  only:
-    - master
+    - asv run --skip-existing-commits ALL 
   artifacts:
     paths:
       - benchmarks/results
