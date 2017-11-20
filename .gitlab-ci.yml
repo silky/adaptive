@@ -1,9 +1,16 @@
 image: quantumtinkerer/research
+
+stages:
+  - test
+  - deploy
+
 test:
+  stage: test
   script:
      - py.test adaptive
 
 benchmarks:
+  stage: test
   script:
     - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
     - cd benchmarks
@@ -17,6 +24,7 @@ benchmarks:
     expire_in: 7d
 
 upload_benchmarks:
+  stage: deploy
   before_script:
     - mkdir -p ~/.ssh && ssh-keyscan tnw-tn1.tudelft.net >> ~/.ssh/known_hosts
     - echo $WEBSITE_KEY | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
