@@ -17,6 +17,9 @@ setup asv:
   script:
     - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
     - asv machine --config=benchmarks/asv.conf.json --yes
+  artifacts:
+    untracked: true
+    expire_in: 2 hour
 
 benchmarks for master:
   stage: benchmark
