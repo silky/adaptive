@@ -210,7 +210,6 @@ class Learner2D(BaseLearner):
                     values_interp = np.zeros((len(points_interp), self.vdim))
 
             for point, value in zip(points_interp, values_interp):
-                assert point in self.data_combined
                 self.data_combined[point] = value
 
             self._ip_combined = interpolate.LinearNDInterpolator(self.tri_combined,
@@ -230,7 +229,6 @@ class Learner2D(BaseLearner):
             self._interp.add(point)
         else:
             if self.bounds_are_done:
-                assert point not in self.data  # XXX: this has to be
                 self.tri.add_points([self.scale(point)])
             self.data[point] = value
             self._interp.discard(point)
@@ -239,13 +237,6 @@ class Learner2D(BaseLearner):
 
         # Reset the in LinearNDInterpolator objects
         self._ip = self._ip_combined = None
-
-        # Just for debugging:
-        if self._tri is not None:
-            for points, tri in [(self.points, self.tri),
-                                (self.points_combined, self.tri_combined)]:
-                assert np.max(points - self.unscale(tri.points)) == 0
-            assert len(self.points_combined) == len(self.points) + len(self._interp)
 
     def _fill_stack(self, stack_till=1):
         if len(self.data_combined) < len(self.bounds) + 1:
