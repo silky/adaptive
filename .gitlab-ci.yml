@@ -16,13 +16,12 @@ setup asv:
   stage: asv-setup
   script:
     - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
-    - asv machine --yes
+    - asv machine --config=benchmarks/asv.conf.json --yes
 
 benchmarks for master:
   stage: benchmark
   script:
-    - cd benchmarks
-    - asv run --skip-existing-commits ALL 
+    - asv run --config=benchmarks/asv.conf.json --yes --skip-existing-commits ALL 
   artifacts:
     paths:
       - benchmarks/results
@@ -32,8 +31,7 @@ benchmarks for master:
 benchmarks not master:
   stage: benchmark
   script:
-    - cd benchmarks
-    - asv run ${CI_COMMIT_REF_NAME}{u}..master
+    - asv run --config=benchmarks/asv.conf.json ${CI_COMMIT_REF_NAME}{u}..master
   except:
     - master
 
