@@ -2,3 +2,25 @@ image: quantumtinkerer/research
 test:
   script:
      - py.test adaptive
+
+benchmarks:
+  script:
+    - pip install https://github.com/airspeed-velocity/asv/archive/master.zip  # we need github.com/airspeed-velocity/asv/pull/540 which is not in the latest release
+    - cd benchmarks
+    - asv machine --yes
+    - asv run ALL
+    - asv publish
+  artifacts:
+    paths:
+      - benchmarks/results
+      - benchmarks/env
+    expire_in: 7d
+
+upload_benchmarks:
+  before_script:
+    - mkdir -p ~/.ssh && ssh-keyscan tnw-tn1.tudelft.net >> ~/.ssh/known_hosts
+    - echo $WEBSITE_KEY | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+  script:
+    - "rsync -ravz --delete benchmarks/html/* adaptive-asv@tnw-tn1.tudelft.net:"
+  after_script:
+    - rm -rf ~/.ssh
