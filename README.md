@@ -83,7 +83,10 @@ packages while working on `adaptive`.
 In order to not pollute the history with the output of the notebooks, please setup the git filter by executing
 
 ```bash
-git config filter.nbclearoutput.clean "jupyter nbconvert --to notebook --ClearOutputPreprocessor.enabled=True --ClearOutputPreprocessor.remove_metadata_fields='[\"deletable\", \"editable\", \"collapsed\", \"scrolled\"]' --stdin --stdout"
+conda install --yes jq  # or `brew install jq` or `apt-get install jq`
+git config filter.nbstrip_jq.clean './nbstrip_jq.sh'
+git config filter.nbstrip_jq.smudge cat
+git config filter.nbstrip_jq.required true
 ```
 
 in the repository.

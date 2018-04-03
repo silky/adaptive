@@ -1,2 +1,2 @@
-*.ipynb filter=nbclearoutput
+*.ipynb filter=nbstrip_jq
 adaptive/_static_version.py export-subst
