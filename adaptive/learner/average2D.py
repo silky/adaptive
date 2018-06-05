@@ -11,13 +11,24 @@ from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
 from .learner2D import default_loss, choose_point_in_triangle
 
+
+def standard_error(lst):
+    n = len(lst)
+    if n < 2:
+        return np.inf
+    sum_f_sq = sum(x**2 for x in lst)
+    mean = sum(x for x in lst)
+    std = sqrt((sum_f_sq - n * mean**2) / (n - 1))
+    return std / sqrt(n)
+
+
 class AverageLearner2D(BaseLearner):
     def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
-        self.data = defaultdict(list)
+        self._data = defaultdict(list)
         self._stack = OrderedDict()
         self._interp = set()
 
@@ -32,6 +43,14 @@ class AverageLearner2D(BaseLearner):
         self._loss = np.inf
 
         self.stack_size = 10
+
+    @property
+    def data(self):
+        return {k: sum(v) / len(v) for k, v in self._data.items()}
+
+    @property
+    def data_sem(self):
+        return {k: standard_error(v) for k, v in self._data.items()}
 
     @property
     def xy_scale(self):
@@ -70,7 +89,7 @@ class AverageLearner2D(BaseLearner):
 
     def data_combined(self):
         # Interpolate the unfinished points
-        data_combined = {k: sum(v) / len(v) for k, v in self.data.items()}
+        data_combined = copy(self.data)
         if self._interp:
             points_interp = list(self._interp)
             if self.bounds_are_done:
@@ -108,7 +127,7 @@ class AverageLearner2D(BaseLearner):
             self._interp.add(point)
             self._ip_combined = None
         else:
-            self.data[point].append(value)
+            self._data[point].append(value)
             self._interp.discard(point)
             self._ip = None
 
