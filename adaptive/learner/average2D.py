@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from copy import copy
 import itertools
 from math import sqrt
@@ -215,7 +215,7 @@ class Learner2D(BaseLearner):
         self._vdim = None
         self.loss_per_triangle = loss_per_triangle or default_loss
         self.bounds = tuple((float(a), float(b)) for a, b in bounds)
-        self.data = OrderedDict()
+        self.data = defaultdict(list)
         self._stack = OrderedDict()
         self._interp = set()
 
@@ -306,7 +306,7 @@ class Learner2D(BaseLearner):
             self._interp.add(point)
             self._ip_combined = None
         else:
-            self.data[point] = value
+            self.data[point].append(value)
             self._interp.discard(point)
             self._ip = None
 
