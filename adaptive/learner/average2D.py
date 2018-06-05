@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
-from copy import copy
+from copy import copy, deepcopy
 import itertools
 from math import sqrt
+import sys
 
 import numpy as np
 from scipy import interpolate
+from sortedcontainers import SortedDict
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
-from .learner2D import default_loss, choose_point_in_triangle
+from .learner2D import default_loss, choose_point_in_triangle, areas
 
 
 def standard_error(lst):
     n = len(lst)
     if n < 2:
-        return np.inf
+        return sys.float_info.max
     sum_f_sq = sum(x**2 for x in lst)
-    mean = sum(x for x in lst)
+    mean = sum(x for x in lst) / n
     std = sqrt((sum_f_sq - n * mean**2) / (n - 1))
     return std / sqrt(n)
 
@@ -149,7 +151,7 @@ class AverageLearner2D(BaseLearner):
             triangle = ip.tri.points[ip.tri.vertices[jsimplex]]
             point_new = choose_point_in_triangle(triangle, max_badness=5)
             point_new = tuple(self._unscale(point_new))
-            loss_new = losses[jsimplex]
+            loss_new = abs(losses[jsimplex])
 
             points_new.append(point_new)
             losses_new.append(loss_new)
@@ -166,8 +168,13 @@ class AverageLearner2D(BaseLearner):
     def ask(self, n, add_data=True):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
-        points = list(self._stack.keys())
-        loss_improvements = list(self._stack.values())
+        if len(self._stack) < 1:
+            self._fill_stack()
+
+        stack = {**self._stack, **self.data_sem}
+        points, loss_improvements = zip(*sorted(stack.items(),
+                                                key=lambda x: -x[1]))
+
         n_left = n - len(points)
         self.tell(points[:n], itertools.repeat(None))
 
