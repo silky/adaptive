@@ -9,9 +9,9 @@ from scipy import interpolate
 
 from ..notebook_integration import ensure_holoviews
 from .base_learner import BaseLearner
+from .learner2D import default_loss, choose_point_in_triangle
 
-
-class Learner2D(BaseLearner):
+class AverageLearner2D(BaseLearner):
     def __init__(self, function, bounds, loss_per_triangle=None):
         self.ndim = len(bounds)
         self._vdim = None
@@ -70,7 +70,7 @@ class Learner2D(BaseLearner):
 
     def data_combined(self):
         # Interpolate the unfinished points
-        data_combined = copy(self.data)
+        data_combined = {k: sum(v) / len(v) for k, v in self.data.items()}
         if self._interp:
             points_interp = list(self._interp)
             if self.bounds_are_done:
