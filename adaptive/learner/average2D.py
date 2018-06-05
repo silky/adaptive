@@ -169,7 +169,7 @@ class AverageLearner2D(BaseLearner):
         # Even if add_data is False we add the point such that _fill_stack
         # will return new points, later we remove these points if needed.
         if len(self._stack) < 1:
-            self._fill_stack()
+            self._fill_stack(self.stack_size)
 
         stack = {**self._stack, **self.data_sem}
         points, loss_improvements = zip(*sorted(stack.items(),
