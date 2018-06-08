@@ -86,7 +86,7 @@ def live_plot(runner, *, plotter=None, update_interval=2, name=None):
     def plot_generator():
         while True:
             if not plotter:
-                yield runner.learner.plot()
+                yield hv.Overlay([runner.learner.plot()])
             else:
                 yield plotter(runner.learner)
 
