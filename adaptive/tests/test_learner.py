@@ -191,7 +191,8 @@ def test_adding_existing_data_is_idempotent(learner_type, f, learner_kwargs):
     assert set(pls) == set(cpls)
 
 
-@run_with(Learner1D, Learner2D, AverageLearner)
+# XXX: This *should* pass for Learner2D (https://gitlab.kwant-project.org/qt/adaptive/issues/84)
+@run_with(Learner1D, xfail(Learner2D), AverageLearner)
 def test_adding_non_chosen_data(learner_type, f, learner_kwargs):
     """Adding data for a point that was not returned by 'ask'."""
     # XXX: learner, control and bounds are not defined
